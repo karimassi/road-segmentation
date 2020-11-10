@@ -127,4 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# data folder
+data/
+
+# macos index files
 .DS_Store
