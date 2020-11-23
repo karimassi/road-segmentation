@@ -52,9 +52,9 @@ class PatchedSatImagesDataset(Dataset):
         
         if self.foreground_threshold is not None:
             if Y > self.foreground_threshold :
-                Y = 1.
+                Y = torch.tensor(1.0)
             else :
-                Y = 0.
+                Y = torch.tensor(0.0)
         
         return X, Y
 
