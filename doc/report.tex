@@ -6,7 +6,7 @@
 \usepackage{subcaption} % for subfigure
 
 \begin{document}
-\title{Machine Learning: Higgs Boson}
+\title{Machine Learning: Road Segmentation for Aerial Images}
 \author{
   Karim Assi\\
   \texttt{karim.assi@epfl.ch}
@@ -25,6 +25,13 @@
 %\end{abstract}
 
 \section{Introduction}
+
+This study deals with the segmentation of aerial terrestrial images: our goal is to accurately determine whether each image pixel is a road or a background. In literature, convolutional neural networks have shown to be effective in solving this task. %Add reference 
+Our dataset consists of satellite images acquired from Google Maps along with their ground truth equivalent (except for the testing set).
+
+\section{Data augmentation}
+
+Before starting training a model, we first looked into ways to generate more data from the existing images. The original training set contains a hundred images, which is definitely not enough to train a classifier. We performed data augmentation such that for each image, we created 9 different versions of it: pick a random angle between 0\textdegree\ and 45\textdegree\ to rotate the image (45\textdegree\ and 90\textdegree, 90\textdegree\  and 135\textdegree, and so on for eighths quadrants of the unit circle), flip it vertically with probability 0.5, then horizontally with the same probability. This step increases the number of training images to 900. 
 
 \section{Results}
 
