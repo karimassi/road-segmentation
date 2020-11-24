@@ -74,7 +74,7 @@ class PatchedTestSatImagesDataset(Dataset):
         """
         super().__init__()
         
-        self.files = [io.read_image(test_img_path + f + "/" + f + ".png") for f in sorted(os.listdir(test_img_path))]
+        self.files = [(f[5:], io.read_image(test_img_path + f + "/" + f + ".png")) for f in sorted(os.listdir(test_img_path))]
         self.transform = self.transform
     
     def patch_per_img(self):
@@ -86,7 +86,7 @@ class PatchedTestSatImagesDataset(Dataset):
     def __getitem__(self, idx):
         files_number = idx // self.patch_per_img()
         patch_number = idx % self.patch_per_img()
-        sat_img = self.files[files_number]
+        img_id, sat_img = self.files[files_number]
         row_number = patch_number // (self.img_size[0] // self.patch_size[0])
         col_number = patch_number % (self.img_size[0] // self.patch_size[0])
         
@@ -95,6 +95,6 @@ class PatchedTestSatImagesDataset(Dataset):
         if self.transform is not None:
             X = self.transform(X)
         
-        return X
+        return f"{img_id : 03}_{col_number}_{row_number}", X
 
 
