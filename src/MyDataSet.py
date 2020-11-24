@@ -7,7 +7,7 @@ import os, sys
 root_dir = "/content/drive/Shareddrives/road-segmentation/data/" if "google.colab" in sys.modules else "data/"
 img_path = root_dir + "training/images/"
 gt_path = root_dir + "training/groundtruth/"
-test_path = "test_set_images/"
+test_path = root_dir + "test_set_images/"
 
 class PatchedSatImagesDataset(Dataset):
     img_size = (400, 400)
