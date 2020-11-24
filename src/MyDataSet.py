@@ -45,11 +45,14 @@ class PatchedSatImagesDataset(Dataset):
         col_number = patch_number % (self.img_size[0] // self.patch_size[0])
         
         X = sat_img[:, row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]] / 255
-        Y = torch.mean(gt_img[row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]])
+        Y = gt_img[row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]]
         
         if self.transform is not None:
             X = self.transform(X)
-        
+            Y = self.transform(Y)
+            
+        Y = torch.mean(Y)
+ 
         if self.foreground_threshold is not None:
             if Y > self.foreground_threshold :
                 Y = torch.tensor(1.0)
