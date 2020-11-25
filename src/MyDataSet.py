@@ -48,8 +48,8 @@ class PatchedSatImagesDataset(Dataset):
         files = self.files[files_number]
         sat_img = files["sat"]
         gt_img = files["gt"]
-        row_number = self.patch_size[0] * patch_number // (self.img_size[0] // self.patch_size[0])
-        col_number = self.patch_size[1] * patch_number % (self.img_size[0] // self.patch_size[0])
+        row_number = self.patch_size[0] * (patch_number // (self.img_size[0] // self.patch_size[0]))
+        col_number = self.patch_size[1] * (patch_number % (self.img_size[0] // self.patch_size[0]))
         
         X = sat_img[:, row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]] / 255
         Y = torch.mean(gt_img[row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]])
@@ -91,8 +91,8 @@ class PatchedTestSatImagesDataset(Dataset):
         files_number = idx // self.patch_per_img()
         patch_number = idx % self.patch_per_img()
         img_id, sat_img = self.files[files_number]
-        row_number = self.patch_size[0] * patch_number // (self.img_size[0] // self.patch_size[0])
-        col_number = self.patch_size[1] * patch_number % (self.img_size[0] // self.patch_size[0])
+        row_number = self.patch_size[0] * (patch_number // (self.img_size[0] // self.patch_size[0]))
+        col_number = self.patch_size[1] * (patch_number % (self.img_size[0] // self.patch_size[0]))
         
         X = sat_img[:, row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]] / 255
         
