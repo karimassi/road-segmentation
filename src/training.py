@@ -1,5 +1,7 @@
 import torch
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def accuracy(prediction, label):
     """
     Compute the accuracy of the prediction
