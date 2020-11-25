@@ -29,8 +29,10 @@ class PatchedSatImagesDataset(Dataset):
         if transform is None:
             transform = transforms.Compose([])
         
+        # Reshape the ground truth images to be able to transform them 
         self.files = [{"sat" : transform(io.read_image(training_img_path + f)), 
-                       "gt" : torch.tensor(transform(mpimg.imread(training_gt_path + f)))} for f in sorted(os.listdir(training_img_path))]
+                       "gt" : transform(torch.tensor(mpimg.imread(training_gt_path + f)).view(1, self.img_size[0], self.img_size[1]))} 
+                      for f in sorted(os.listdir(training_img_path))]
         
         self.foreground_threshold = foreground_threshold
         
