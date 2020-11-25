@@ -1,4 +1,5 @@
 import torch
+import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 import torchvision.io as io
 import matplotlib.image as mpimg
@@ -25,10 +26,14 @@ class PatchedSatImagesDataset(Dataset):
         """
         super().__init__()
         
-        self.files = [{"sat" : io.read_image(training_img_path + f), "gt" : torch.tensor(mpimg.imread(training_gt_path + f))} for f in sorted(os.listdir(training_img_path))]
+        if transform is None:
+            transform = transforms.Compose([])
+        
+        self.files = [{"sat" : transform(io.read_image(training_img_path + f)), 
+                       "gt" : torch.tensor(transform(mpimg.imread(training_gt_path + f)))} for f in sorted(os.listdir(training_img_path))]
+        
         self.foreground_threshold = foreground_threshold
-        self.transform = transform
-    
+        
     def patch_per_img(self):
         return (self.img_size[0] // self.patch_size[0]) * (self.img_size[1] // self.patch_size[1])
     
@@ -45,14 +50,8 @@ class PatchedSatImagesDataset(Dataset):
         col_number = patch_number % (self.img_size[0] // self.patch_size[0])
         
         X = sat_img[:, row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]] / 255
-        Y = gt_img[row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]]
-        
-        if self.transform is not None:
-            X = self.transform(X)
-            Y = self.transform(Y)
-            
-        Y = torch.mean(Y)
- 
+        Y = torch.mean(gt_img[row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]])
+         
         if self.foreground_threshold is not None:
             if Y > self.foreground_threshold :
                 Y = torch.tensor(1.0)
