@@ -78,7 +78,8 @@ class PatchedTestSatImagesDataset(Dataset):
         if transform is None:
             transform = transforms.Compose([])
         
-        self.files = [(f[5:], transform(io.read_image(test_img_path + f + "/" + f + ".png"))) for f in sorted(os.listdir(test_img_path))]
+        self.files = [(int(f[5:]), transform(io.read_image(test_img_path + f + "/" + f + ".png"))) 
+                      for f in sorted(os.listdir(test_img_path))]
     
     def patch_per_img(self):
         return (self.img_size[0] // self.patch_size[0]) * (self.img_size[1] // self.patch_size[1])
