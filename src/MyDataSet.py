@@ -48,8 +48,8 @@ class PatchedSatImagesDataset(Dataset):
         files = self.files[files_number]
         sat_img = files["sat"]
         gt_img = files["gt"]
-        row_number = patch_number // (self.img_size[0] // self.patch_size[0])
-        col_number = patch_number % (self.img_size[0] // self.patch_size[0])
+        row_number = self.patch_size[0] * patch_number // (self.img_size[0] // self.patch_size[0])
+        col_number = self.patch_size[1] * patch_number % (self.img_size[0] // self.patch_size[0])
         
         X = sat_img[:, row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]] / 255
         Y = torch.mean(gt_img[row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]])
@@ -75,8 +75,10 @@ class PatchedTestSatImagesDataset(Dataset):
         """
         super().__init__()
         
-        self.files = [(f[5:], io.read_image(test_img_path + f + "/" + f + ".png")) for f in sorted(os.listdir(test_img_path))]
-        self.transform = transform
+        if transform is None:
+            transform = transforms.Compose([])
+        
+        self.files = [(f[5:], transform(io.read_image(test_img_path + f + "/" + f + ".png"))) for f in sorted(os.listdir(test_img_path))]
     
     def patch_per_img(self):
         return (self.img_size[0] // self.patch_size[0]) * (self.img_size[1] // self.patch_size[1])
@@ -88,13 +90,11 @@ class PatchedTestSatImagesDataset(Dataset):
         files_number = idx // self.patch_per_img()
         patch_number = idx % self.patch_per_img()
         img_id, sat_img = self.files[files_number]
-        row_number = patch_number // (self.img_size[0] // self.patch_size[0])
-        col_number = patch_number % (self.img_size[0] // self.patch_size[0])
+        row_number = self.patch_size[0] * patch_number // (self.img_size[0] // self.patch_size[0])
+        col_number = self.patch_size[1] * patch_number % (self.img_size[0] // self.patch_size[0])
         
         X = sat_img[:, row_number : row_number + self.patch_size[0], col_number : col_number + self.patch_size[1]] / 255
         
-        if self.transform is not None:
-            X = self.transform(X)
-        return "{}_{}_{}".format(img_id, col_number, row_number), X
+        return "{:03d}_{}_{}".format(img_id, col_number, row_number), X
 
 
