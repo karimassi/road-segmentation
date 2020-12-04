@@ -6,20 +6,16 @@ from PIL import Image
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
-# TODO: vectorize this
 # TODO: load to device
 def load_mask(path):
-  gt = mpimg.imread(path)
+  gt = torch.tensor(mpimg.imread(path))
+  first_channel = (gt > 0.5) * 1.0
+  second_channel = (gt < 0.5) * 1.0
   mask = torch.zeros([2, gt.shape[0], gt.shape[1]], dtype=torch.float32)
-  for i in range(gt.shape[0]):
-    for j in range(gt.shape[1]):
-      if(gt[i][j] > 0.5):
-        # first channel is for foreground
-        # second channel is for background
-        mask[0][i][j] = 1.0
-      else:
-        mask[1][i][j] = 1.0
-
+  
+  mask[0] = first_channel
+  mask[1] = second_channel
+  
   return mask
 
 class ImageMaskDataset(Dataset):
