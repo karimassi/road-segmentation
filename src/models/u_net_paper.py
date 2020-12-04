@@ -2,90 +2,29 @@ import torch
 from torch import nn
 
 class UNet_paper(nn.Module):
-  # implementation of u-net neural network architecture as seen in original paper arXiv:1505.04597,
-  # but applied with padding in order to achieve matching sizes of input and output images
-
-  # is it better to implement residue block as a function or module?
-  class ResBlock(nn.Module):
-    def __init__(self, in_c, out_c):
-      super().__init__()
-      self.in_c = in_c
-      self.out_c = out_c
-    
-    def forward(self, input):
-      
-      convolution_layer = nn.Sequential(
-        nn.BatchNorm2d(self.in_c),
-        nn.ReLU(inplace=True),
-        # to apply 'same' padding set the value of padding to (kernel_size - 1) / 2
-        nn.Conv2d(in_channels=self.in_c, out_channels=self.out_c, kernel_size=3, padding=1),
-        nn.BatchNorm2d(self.out_c),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(in_channels=self.out_c, out_channels=self.out_c, kernel_size=3, padding=1),
-      )
-
-      residual = input
-      conv = convolution_layer(input)
-      # this line doesn't work since conv has 32 channels and residual only 3
-      output = conv + residual
-      
-      return output
+  # implementation of u-net neural network with residual blocks as seen in paper doi:10.3390/app9224825
 
   def __init__(self, num_channels, num_filters):
     super().__init__()
     self.num_channels = num_channels
     self.num_filters = num_filters
 
-  def conv_layer(self, input, in_c, out_c):
-    convolution_layer = nn.Sequential(
-        # to apply 'same' padding set the value of padding to (kernel_size - 1) / 2
-        nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, padding=1),
-        nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, padding=1),
-    )
-    output = convolution_layer(input)
-    return output
-
-  def down_sample(self, input, in_c, out_c, max_pool):
-    resBlock = self.ResBlock(in_c, out_c)
-    conv = resBlock(input)
-    pool = max_pool(conv)
-    return conv, pool
-
-  def up_sample(self, input, in_c, out_c):
-    conv = self.conv_layer(input, in_c, out_c)
-    trans_conv = nn.ConvTranspose2d(
-        in_channels=out_c,
-        out_channels=out_c // 2,
-        kernel_size=3,
-        stride=(2, 2),
-        padding=1,
-        output_padding=1
-    )
-    up_samp = trans_conv(conv)
-    return up_samp
-
-  def forward(self, input):
-    # define max pooling layer
-    max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
-
-    # encoder part (downsampling)
+    # define encoder part (downsampling)
     in_c, out_c = self.num_channels, self.num_filters
-    conv1, pool1 = self.down_sample(input, in_c, out_c, max_pool)
+    self.down_samp1 = DownSample(in_c, out_c)
     in_c = out_c; out_c = 2*out_c
-    conv2, pool2 = self.down_sample(pool1, in_c, out_c, max_pool)
+    self.down_samp2 = DownSample(in_c, out_c)
     in_c = out_c; out_c = 2*out_c
-    conv3, pool3 = self.down_sample(pool2, in_c, out_c, max_pool)
-    in_c = out_c; out_c = 2*out_c
-    conv4, pool4 = self.down_sample(pool3, in_c, out_c, max_pool)
+    self.down_samp3 = DownSample(in_c, out_c)
     
-    # middle of the network
+    # define middle of the network
     in_c = out_c; out_c = 2*out_c
-    conv5 = self.conv_layer(pool4, in_c, out_c)
+    self.middle_down = ResBlock(in_c, out_c)
 
     # switch values of out_c and in_c to prepare them for upsampling part of the net
     temp = out_c; out_c = in_c; in_c = temp
-    # transposed convolution
-    trans_conv = nn.ConvTranspose2d(
+    # transposed convolution for upsampling
+    self.middle_up = nn.ConvTranspose2d(
         in_channels=in_c,
         out_channels=out_c,
         kernel_size=3,
@@ -96,27 +35,122 @@ class UNet_paper(nn.Module):
         output_padding=1
     )
 
-    # decoder part (upsampling)
-    up_samp1 = trans_conv(conv5)
-    concat1 = torch.cat((conv4, up_samp1), 1)
-    up_samp2 = self.up_sample(concat1, in_c, out_c)
+    # define decoder part (upsampling)
+    self.up_samp1 = UpSample(in_c, out_c)
     in_c = out_c; out_c = out_c // 2
-    concat2 = torch.cat((conv3, up_samp2), 1)
-    up_samp3 = self.up_sample(concat2, in_c, out_c)
+    self.up_samp2 = UpSample(in_c, out_c)
     in_c = out_c; out_c = out_c // 2
-    concat3 = torch.cat((conv2, up_samp3), 1)
-    up_samp4 = self.up_sample(concat3, in_c, out_c)
-    in_c = out_c; out_c = out_c // 2
-    concat4 = torch.cat((conv1, up_samp4), 1)
-    up_samp5 = self.conv_layer(concat4, in_c, out_c)
+    self.up_samp3 = ConvLayer(in_c, out_c)
 
     # final layer applies 1x1 convolution to map each num_filters-component
-    # feature vector to two classes (0 for background, 1 for road). 
-    final_conv = nn.Conv2d(in_channels=(in_c // 2), out_channels=1, kernel_size=1)
-    output = final_conv(up_samp5)
-    print(output.size())
+    # feature vector to two classes ([0, 1] for background, [1, 0] for road).
+    self.final_conv = nn.Conv2d(in_channels=(in_c // 2), out_channels=2, kernel_size=1)
+    self.sigmoid = nn.Sigmoid()
 
-    sig = nn.Sigmoid()
-    output2 = sig(output)
+  def forward(self, input):
 
-    return output2
+    # encoder part (downsampling)
+    conv1, pool1 = self.down_samp1(input)
+    conv2, pool2 = self.down_samp2(pool1)
+    conv3, pool3 = self.down_samp3(pool2)
+    
+    # middle of the network
+    mid_down = self.middle_down(pool3)
+    mid_up = self.middle_up(mid_down)
+
+    # decoder part (upsampling)
+    concat1 = torch.cat((conv3, mid_up), 1)
+    up_conv1 = self.up_samp1(concat1)
+    
+    concat2 = torch.cat((conv2, up_conv1), 1)
+    up_conv2 = self.up_samp2(concat2)
+    
+    concat3 = torch.cat((conv1, up_conv2), 1)
+    up_conv3 = self.up_samp3(concat3)
+
+    # end of network
+    final = self.final_conv(up_conv3)
+    output = self.sigmoid(final)
+
+    return output
+
+class DownSample(nn.Module):
+  def __init__(self, num_channels, num_filters):
+    super().__init__()
+    self.num_channels = num_channels
+    self.num_filters = num_filters
+
+    self.conv = ResBlock(num_channels, num_filters)
+    self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+  def forward(self, input):
+    conv_out = self.conv(input)
+    max_out = self.max_pool(conv_out)
+    return conv_out, max_out
+
+class UpSample(nn.Module):
+  def __init__(self, num_channels, num_filters):
+    super().__init__()
+    self.num_channels = num_channels
+    self.num_filters = num_filters
+
+    conv = ConvLayer(num_channels, num_filters)
+    trans_conv = nn.ConvTranspose2d(
+        in_channels=num_filters,
+        out_channels=num_filters // 2,
+        kernel_size=3,
+        stride=(2, 2),
+        padding=1,
+        output_padding=1
+    )
+    self.up_samp = nn.Sequential(
+        conv,
+        trans_conv
+    )
+
+  def forward(self, input):
+    return self.up_samp(input)
+
+class ConvLayer(nn.Module):
+  def __init__(self, num_channels, num_filters):
+    super().__init__()
+    self.num_channels = num_channels
+    self.num_filters = num_filters
+
+    self.layer = nn.Sequential(
+        # to apply 'same' padding set the value of padding to (kernel_size - 1) / 2
+        nn.Conv2d(in_channels=num_channels, out_channels=num_filters, kernel_size=3, padding=1),
+        nn.Conv2d(in_channels=num_filters, out_channels=num_filters, kernel_size=3, padding=1),
+    )
+
+  def forward(self, input):
+    return self.layer(input)
+
+class ResBlock(nn.Module):
+  def __init__(self, in_c, out_c):
+    super().__init__()
+    self.in_c = in_c
+    self.out_c = out_c
+
+    self.convolution_layer = nn.Sequential(
+      nn.BatchNorm2d(self.in_c),
+      nn.ReLU(inplace=True),
+      # to apply 'same' padding set the value of padding to (kernel_size - 1) / 2
+      nn.Conv2d(in_channels=self.in_c, out_channels=self.out_c, kernel_size=3, padding=1),
+      nn.BatchNorm2d(self.out_c),
+      nn.ReLU(inplace=True),
+      nn.Conv2d(in_channels=self.out_c, out_channels=self.out_c, kernel_size=3, padding=1),
+    )
+
+    # increasing number of channels of original input to match dimensionality with conv(x)
+    self.match_dim = nn.Conv2d(in_channels=self.in_c, out_channels=self.out_c, kernel_size=3, padding=1)
+
+  def forward(self, input):
+
+    residual = input
+    conv = self.convolution_layer(input)
+    residual = self.match_dim(residual)
+
+    output = conv + residual
+      
+    return output
