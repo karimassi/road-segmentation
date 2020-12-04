@@ -10,22 +10,19 @@ class UNet(nn.Module):
     self.num_channels = num_channels
     self.num_filters = num_filters
 
-    # define max pooling layer
-    self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
-
-    # encoder part (downsampling)
+    # define encoder part (downsampling)
     in_c, out_c = self.num_channels, self.num_filters
-    self.down_samp1 = self.down_sample(in_c, out_c)
+    self.down_samp1 = DownSample(in_c, out_c)
     in_c = out_c; out_c = 2*out_c
-    self.down_samp2 = self.down_sample(in_c, out_c)
+    self.down_samp2 = DownSample(in_c, out_c)
     in_c = out_c; out_c = 2*out_c
-    self.down_samp3 = self.down_sample(in_c, out_c)
+    self.down_samp3 = DownSample(in_c, out_c)
     in_c = out_c; out_c = 2*out_c
-    self.down_samp4 = self.down_sample(in_c, out_c)
+    self.down_samp4 = DownSample(in_c, out_c)
     
-    # middle of the network
+    # define middle of the network
     in_c = out_c; out_c = 2*out_c
-    self.middle_down = self.conv_layer(in_c, out_c)
+    self.middle_down = ConvLayer(in_c, out_c)
 
     # switch values of out_c and in_c to prepare them for upsampling part of the net
     temp = out_c; out_c = in_c; in_c = temp
@@ -41,64 +38,27 @@ class UNet(nn.Module):
         output_padding=1
     )
 
-    # decoder part (upsampling)
-    self.up_samp1 = self.up_sample(in_c, out_c)
+    # define decoder part (upsampling)
+    self.up_samp1 = UpSample(in_c, out_c)
     in_c = out_c; out_c = out_c // 2
-    self.up_samp2 = self.up_sample(in_c, out_c)
+    self.up_samp2 = UpSample(in_c, out_c)
     in_c = out_c; out_c = out_c // 2
-    self.up_samp3 = self.up_sample(in_c, out_c)
+    self.up_samp3 = UpSample(in_c, out_c)
     in_c = out_c; out_c = out_c // 2
-    self.up_samp4 = self.conv_layer(in_c, out_c)
+    self.up_samp4 = ConvLayer(in_c, out_c)
 
     # final layer applies 1x1 convolution to map each num_filters-component
-    # feature vector to two classes (0 for background, 1 for road). 
-    self.final_conv = nn.Conv2d(in_channels=(in_c // 2), out_channels=1, kernel_size=1)
-    self.sig = nn.Sigmoid()
-
-  def conv_layer(self, in_c, out_c):
-    convolution_layer = nn.Sequential(
-        # to apply 'same' padding set the value of padding to (kernel_size - 1) / 2
-        nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, padding=1),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, padding=1),
-        nn.ReLU(inplace=True)
-    )
-    return convolution_layer
-
-  def down_sample(self, in_c, out_c):
-    conv = self.conv_layer(in_c, out_c)
-    return conv
-
-  def up_sample(self, in_c, out_c):
-    conv = self.conv_layer(in_c, out_c)
-    trans_conv = nn.ConvTranspose2d(
-        in_channels=out_c,
-        out_channels=out_c // 2,
-        kernel_size=3,
-        stride=(2, 2),
-        padding=1,
-        output_padding=1
-    )
-    up_samp = nn.Sequential(
-        conv,
-        trans_conv
-    )
-    return up_samp
+    # feature vector to two classes ([0, 1] for background, [1, 0] for road).
+    self.final_conv = nn.Conv2d(in_channels=(in_c // 2), out_channels=2, kernel_size=1)
+    self.sigmoid = nn.Sigmoid()
 
   def forward(self, input):
 
     # encoder part (downsampling)
-    conv1 = self.down_samp1(input)
-    pool1 = self.max_pool(conv1)
-
-    conv2 = self.down_samp2(pool1)
-    pool2 = self.max_pool(conv2)
-
-    conv3 = self.down_samp3(pool2)
-    pool3 = self.max_pool(conv3)
-
-    conv4 = self.down_samp4(pool3)
-    pool4 = self.max_pool(conv4)
+    conv1, pool1 = self.down_samp1(input)
+    conv2, pool2 = self.down_samp2(pool1)
+    conv3, pool3 = self.down_samp3(pool2)
+    conv4, pool4 = self.down_samp4(pool3)
     
     # middle of the network
     mid_down = self.middle_down(pool4)
@@ -117,11 +77,63 @@ class UNet(nn.Module):
     concat4 = torch.cat((conv1, up_conv3), 1)
     up_conv4 = self.up_samp4(concat4)
 
-    # final layer applies 1x1 convolution to map each num_filters-component
-    # feature vector to two classes (0 for background, 1 for road). 
-    output = self.final_conv(up_conv4)
-    output2 = self.sig(output)
-    #print(output2.size())
+    # end of network
+    final = self.final_conv(up_conv4)
+    output = self.sigmoid(final)
 
-    return output2
+    return output
+
+class DownSample(nn.Module):
+  def __init__(self, num_channels, num_filters):
+    super().__init__()
+    self.num_channels = num_channels
+    self.num_filters = num_filters
+
+    self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
+    self.conv = ConvLayer(num_channels, num_filters)
+
+  def forward(self, input):
+    conv_out = self.conv(input)
+    max_out = self.max_pool(conv_out)
+    return conv_out, max_out
+
+class UpSample(nn.Module):
+  def __init__(self, num_channels, num_filters):
+    super().__init__()
+    self.num_channels = num_channels
+    self.num_filters = num_filters
+
+    conv = ConvLayer(num_channels, num_filters)
+    trans_conv = nn.ConvTranspose2d(
+        in_channels=num_filters,
+        out_channels=num_filters // 2,
+        kernel_size=3,
+        stride=(2, 2),
+        padding=1,
+        output_padding=1
+    )
+    self.up_samp = nn.Sequential(
+        conv,
+        trans_conv
+    )
+
+  def forward(self, input):
+    return self.up_samp(input)
+
+class ConvLayer(nn.Module):
+  def __init__(self, num_channels, num_filters):
+    super().__init__()
+    self.num_channels = num_channels
+    self.num_filters = num_filters
+
+    self.layer = nn.Sequential(
+        # to apply 'same' padding set the value of padding to (kernel_size - 1) / 2
+        nn.Conv2d(in_channels=num_channels, out_channels=num_filters, kernel_size=3, padding=1),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(in_channels=num_filters, out_channels=num_filters, kernel_size=3, padding=1),
+        nn.ReLU(inplace=True)
+    )
+
+  def forward(self, input):
+    return self.layer(input)
 
