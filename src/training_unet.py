@@ -23,7 +23,7 @@ def dice_coef(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
 def dice_loss(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
     return 1 - dice_coef(prediction, target, smooth, class_weights)
 
-def train(model, dataset_train, dataset_test, optimizer, num_epochs):
+def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
     """
     Train the given model
     
@@ -44,7 +44,7 @@ def train(model, dataset_train, dataset_test, optimizer, num_epochs):
 
             # Evaluate the network (forward pass)
             batch_pred = model(batch_x)
-            loss = dice_loss(batch_pred, batch_y)
+            loss = criterion(batch_pred, batch_y.float())
 
             # Compute the gradient
             optimizer.zero_grad()
