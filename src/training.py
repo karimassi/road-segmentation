@@ -30,6 +30,18 @@ def F1_score(prediction, label):
     
     F1 = 2 * precision * recall / (precision + recall)
     return F1.cpu().item()
+    
+def dice_coef(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
+    coef = 0.
+    for c in range(target.shape[1]):
+           pflat = prediction[:, c].contiguous().view(-1)
+           tflat = target[:, c].contiguous().view(-1)
+           intersection = (pflat * tflat).sum()
+           
+           w = class_weights[c]
+           coef += w*((2. * intersection + smooth) /
+                             (pflat.sum() + tflat.sum() + smooth))
+    return coef
 
 def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
     """
@@ -71,6 +83,7 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
             # Evaluate the network (forward pass)
             prediction = model(batch_x)
             accuracies_test.append(accuracy(prediction, batch_y))
-            f1_scores_test.append(F1_score(prediction, batch_y))
+            #f1_scores_test.append(F1_score(prediction, batch_y))
+            f1_scores_test.append(dice_coef(prediction, batch_y).item())
 
         print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5}")
