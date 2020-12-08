@@ -14,6 +14,10 @@ def accuracy(prediction, label):
     batch_size = label.size(0)
     correct = torch.sum(prediction == label)
     return (correct / batch_size).cpu()
+    
+def accuracy_unet(prediction, mask):
+    correct = torch.sum(torch.round(prediction).int() == mask.int())
+    return (correct / (mask.shape[0] * mask.shape[1] * mask.shape[2] * mask.shape[3])).item()
 
 def F1_score(prediction, label):
     """
@@ -82,7 +86,8 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
 
             # Evaluate the network (forward pass)
             prediction = model(batch_x)
-            accuracies_test.append(accuracy(prediction, batch_y))
+            #accuracies_test.append(accuracy(prediction, batch_y))
+            accuracies_test.append(accuracy_unet(prediction, batch_y))
             #f1_scores_test.append(F1_score(prediction, batch_y))
             f1_scores_test.append(dice_coef(prediction, batch_y).item())
 
