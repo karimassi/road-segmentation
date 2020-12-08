@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -61,6 +62,7 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
     print("Starting training")
     model.to(device)
     for epoch in range(num_epochs):
+        begin = time.time()
         # Train an epoch
         model.train()
         for batch_x, batch_y in dataset_train:
@@ -91,4 +93,4 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
             #f1_scores_test.append(F1_score(prediction, batch_y))
             f1_scores_test.append(dice_coef(prediction, batch_y).item())
 
-        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5}")
+        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5} | In {time.time() - begin} s")
