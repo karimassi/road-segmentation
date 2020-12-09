@@ -31,7 +31,7 @@ def F1_score(prediction, label):
     F1 = 2 * precision * recall / (precision + recall)
     return F1.cpu().item()
 
-def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
+def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, num_epochs):
     """
     Train the given model
     
@@ -49,7 +49,6 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
         model.train()
         for batch_x, batch_y in dataset_train:
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-
             # Evaluate the network (forward pass)
             batch_pred = model(batch_x)
             loss = criterion(batch_pred, batch_y.float())
@@ -74,3 +73,4 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
             f1_scores_test.append(F1_score(prediction, batch_y))
 
         print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5}")
+        scheduler.step()
