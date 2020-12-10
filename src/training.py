@@ -63,7 +63,7 @@ def iou(prediction, target, smooth = 1e-6):
     
     return thresholded.mean().item()
 
-def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
+def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, num_epochs):
     """
     Train the given model
     
@@ -72,10 +72,14 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
     @param dataset_train : torch.utils.data.DataLoader
     @param dataset_test  : torch.utils.data.DataLoader
     @param optimizer     : torch.optim.Optimizer
+    @param scheduler     : torch.optim.lr_scheduler
     @param num_epochs    : int
     """
     print("Starting training")
     model.to(device)
+    global_accuracies_test = []
+    global_f1_scores_test = []
+    global_iou_scores_test = []
     for epoch in range(num_epochs):
         begin = time.time()
         # Train an epoch
@@ -107,5 +111,12 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
             accuracies_test.append(accuracy_unet(prediction, batch_y))
             f1_scores_test.append(dice_coef(prediction, batch_y).item())
             iou_scores_test.append(iou(prediction, batch_y))
-
-        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5} | Test IoU : {np.mean(iou_scores_test):.5} | In {time.time() - begin} s")
+        scheduler.step()
+        accuracies_test_mean = np.mean(accuracies_test)
+        global_accuracies_test.append(accuracies_test_mean)
+        f1_scores_test_mean = np.mean(f1_scores_test)
+        global_f1_scores_test.append(f1_scores_test_mean)
+        iou_scores_test_mean = np.mean(iou_scores_test)
+        global_iou_scores_test.append(iou_scores_test_mean)
+        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {accuracies_test_mean:.5} | Test F1 : {f1_scores_test_mean:.5} | Test IoU : {iou_scores_test_mean:.5} | In {time.time() - begin} s")
+    return global_accuracies_test, global_f1_scores_test, global_iou_scores_test
