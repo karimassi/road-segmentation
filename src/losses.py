@@ -48,17 +48,18 @@ class DiceLoss(nn.Module):
         return 1 - dice
         
 class Dice(nn.Module):
-    def __init__(self):
+    def __init__(self, class_weights = [0.5, 0.5]):
         super().__init__()
+        self.class_weights = class_weights
 
-    def forward(self, prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
+    def forward(self, prediction, target, smooth = 1):
       dice = 0.
       for c in range(target.shape[1]):
             pflat = prediction[:, c].contiguous().view(-1)
             tflat = target[:, c].contiguous().view(-1)
             intersection = (pflat * tflat).sum()
             
-            w = class_weights[c]
+            w = self.class_weights[c]
             dice += w*((2. * intersection + smooth) /
                               (pflat.sum() + tflat.sum() + smooth))
       return 1 - dice
