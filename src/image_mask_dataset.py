@@ -25,7 +25,8 @@ class ImageMaskDataset(Dataset):
       # extracts patches of size 224x224 with stride 64
       from skimage.util.shape import view_as_windows
 
-      sat_img = np.transpose(sat_img, axes=(2, 1, 0))
+      sat_img = np.transpose(sat_img, axes=(2, 0, 1))
+
       sat_windows = view_as_windows(sat_img, window_shape=(3, 224, 224), step=64)
       gt_windows = view_as_windows(gt_img, window_shape=(224, 224), step=64)
 
@@ -33,7 +34,7 @@ class ImageMaskDataset(Dataset):
       gt_patches = []
       for i in range(sat_windows.shape[1]):
         for j in range(sat_windows.shape[2]):
-          sat_patch = np.transpose(sat_windows[0][j][i], axes=(2, 1, 0))
+          sat_patch = np.transpose(sat_windows[0][j][i], axes=(1, 2, 0))
           gt_patch = gt_windows[i][j]
           sat_patches.append(sat_patch)
           gt_patches.append(gt_patch)
@@ -56,7 +57,7 @@ class ImageMaskDataset(Dataset):
           sat_img = mpimg.imread(img_dir + self.files[i])
           gt_img = mpimg.imread(gt_dir + self.files[i])
           img_patches, gt_patches = self.extract_patches(sat_img, gt_img)
-          self.images += [torch.from_numpy(img).permute(2, 1, 0) for img in img_patches]
+          self.images += [torch.from_numpy(img).permute(2, 0, 1) for img in img_patches]
           self.masks += [self.convert_to_one_hot(gt) for gt in gt_patches]
 
         # apply transformation
@@ -80,7 +81,7 @@ class FullSubmissionImageDataset(Dataset):
 
         #load data
         files = os.listdir(test_dir)
-        self.images = [(int(f[5:]), torch.tensor(mpimg.imread(test_dir + f + "/" + f + ".png")).permute(2, 1, 0)) for f in files]
+        self.images = [(int(f[5:]), torch.tensor(mpimg.imread(test_dir + f + "/" + f + ".png")).permute(2, 0, 1)) for f in files]
       
     def __len__(self): 
         return len(self.images)
