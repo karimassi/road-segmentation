@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import time
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -14,6 +15,10 @@ def accuracy(prediction, label):
     batch_size = label.size(0)
     correct = torch.sum(prediction == label)
     return (correct / batch_size).cpu()
+    
+def accuracy_unet(prediction, mask):
+    correct = torch.sum(torch.round(prediction).int() == mask.int())
+    return (correct / (mask.shape[0] * mask.shape[1] * mask.shape[2] * mask.shape[3])).item()
 
 def F1_score(prediction, label):
     """
@@ -30,6 +35,18 @@ def F1_score(prediction, label):
     
     F1 = 2 * precision * recall / (precision + recall)
     return F1.cpu().item()
+    
+def dice_coef(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
+    coef = 0.
+    for c in range(target.shape[1]):
+           pflat = prediction[:, c].contiguous().view(-1)
+           tflat = target[:, c].contiguous().view(-1)
+           intersection = (pflat * tflat).sum()
+           
+           w = class_weights[c]
+           coef += w*((2. * intersection + smooth) /
+                             (pflat.sum() + tflat.sum() + smooth))
+    return coef
 
 def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, num_epochs):
     """
@@ -45,6 +62,7 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, n
     print("Starting training")
     model.to(device)
     for epoch in range(num_epochs):
+        begin = time.time()
         # Train an epoch
         model.train()
         for batch_x, batch_y in dataset_train:
@@ -69,8 +87,11 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, n
 
             # Evaluate the network (forward pass)
             prediction = model(batch_x)
-            accuracies_test.append(accuracy(prediction, batch_y))
-            f1_scores_test.append(F1_score(prediction, batch_y))
+            #accuracies_test.append(accuracy(prediction, batch_y))
+            accuracies_test.append(accuracy_unet(prediction, batch_y))
+            #f1_scores_test.append(F1_score(prediction, batch_y))
+            f1_scores_test.append(dice_coef(prediction, batch_y).item())
 
-        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5}")
+        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5} | In {time.time() - begin} s")
         scheduler.step()
+
