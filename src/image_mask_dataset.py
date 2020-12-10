@@ -2,52 +2,74 @@ import torch
 import torchvision.io as io
 import os
 import matplotlib.image as mpimg
-from PIL import Image
-import torchvision.transforms as transforms
-import torchvision.transforms.functional as TF
+import numpy as np
 from torch.utils.data import Dataset
 
-foreground_threshold = 0.25 # percentage of pixels > 1 required to assign a foreground label to a patch
-
-
-# TODO: load to device
-def load_mask(path):
-    gt = torch.tensor(mpimg.imread(path))
-    road = (gt > foreground_threshold) * 1.0
-    background = (gt < foreground_threshold) * 1.0
-    mask = torch.zeros([2, gt.shape[0], gt.shape[1]], dtype=torch.float32)
-
-    mask[0] = road
-    mask[1] = background
-
-    return mask
-
 class ImageMaskDataset(Dataset):
+
+    @staticmethod
+    def convert_to_one_hot(gt_img):
+      # converts groundtruth image to one-hot encoding
+      gt = torch.tensor(gt_img)
+      road = (gt > 0.5) * 1.0
+      background = (gt < 0.5) * 1.0
+      mask = torch.zeros([2, gt.shape[0], gt.shape[1]], dtype=torch.float32)
+
+      mask[0] = road
+      mask[1] = background
+
+      return mask
+
+    @staticmethod
+    def extract_patches(sat_img, gt_img):
+      # extracts patches of size 224x224 with stride 64
+      from skimage.util.shape import view_as_windows
+
+      sat_img = np.transpose(sat_img, axes=(2, 1, 0))
+      sat_windows = view_as_windows(sat_img, window_shape=(3, 224, 224), step=64)
+      gt_windows = view_as_windows(gt_img, window_shape=(224, 224), step=64)
+
+      sat_patches = []
+      gt_patches = []
+      for i in range(sat_windows.shape[1]):
+        for j in range(sat_windows.shape[2]):
+          sat_patch = np.transpose(sat_windows[0][j][i], axes=(2, 1, 0))
+          gt_patch = gt_windows[i][j]
+          sat_patches.append(sat_patch)
+          gt_patches.append(gt_patch)
+
+      return sat_patches, gt_patches
     
-    def __init__(self, img_dir, gt_dir, angle):
+    def __init__(self, img_dir, gt_dir, transform=None):
         super().__init__()
 
         self.img_dir = img_dir
         self.gt_dir = gt_dir
 
-        pil_to_tensor = transforms.ToTensor()
-
-        #load data
+        # load data
         self.files = os.listdir(img_dir)
         self.n = len(self.files)
-        
-        #self.images = [io.read_image(img_dir + self.files[i]) for i in range(self.n)]
-        self.images = [TF.rotate(pil_to_tensor(Image.open(img_dir + self.files[i]).convert('RGB')), angle) for i in range(self.n)]
-        #self.masks = [torch.tensor(mpimg.imread(gt_dir + self.files[i])).unsqueeze(dim=0) for i in range(self.n)]
-        #self.masks = [mpimg.imread(gt_dir + self.files[i]) for i in range(self.n)]
-        self.masks = [TF.rotate(load_mask(gt_dir + self.files[i]), angle) for i in range(self.n)]
-      
+
+        self.images = []
+        self.masks = []
+        for i in range(self.n):
+          sat_img = mpimg.imread(img_dir + self.files[i])
+          gt_img = mpimg.imread(gt_dir + self.files[i])
+          img_patches, gt_patches = self.extract_patches(sat_img, gt_img)
+          self.images += [torch.from_numpy(img).permute(2, 1, 0) for img in img_patches]
+          self.masks += [self.convert_to_one_hot(gt) for gt in gt_patches]
+
+        # apply transformation
+        if transform is not None:
+          self.images = [transform(img) for img in self.images]
+          self.masks = [transform(mask) for mask in self.masks]
 
     def __len__(self): 
-        return self.n
+        return len(self.images)
         
     def __getitem__(self, idx):
         return self.images[idx], self.masks[idx]
+
 
 class FullSubmissionImageDataset(Dataset):
     
@@ -56,11 +78,9 @@ class FullSubmissionImageDataset(Dataset):
 
         self.test_dir = test_dir
 
-        transform = transforms.ToTensor()
-
         #load data
         files = os.listdir(test_dir)
-        self.images = [(int(f[5:]), transform(Image.open(test_dir + f + "/" + f + ".png").convert('RGB'))) for f in files]
+        self.images = [(int(f[5:]), torch.tensor(mpimg.imread(test_dir + f + "/" + f + ".png")).permute(2, 1, 0)) for f in files]
       
     def __len__(self): 
         return len(self.images)
