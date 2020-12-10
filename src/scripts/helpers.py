@@ -1,4 +1,5 @@
 # these two methods were copied from tf_aerial_images.py 
+import numpy as np
 
 def img_float_to_uint8(img):
     rimg = img - np.min(img)
