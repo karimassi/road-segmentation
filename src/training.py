@@ -46,7 +46,7 @@ def dice_coef(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
            w = class_weights[c]
            coef += w*((2. * intersection + smooth) /
                              (pflat.sum() + tflat.sum() + smooth))
-    return coef
+    return coef.item()
 
 def iou(prediction, target, smooth = 1e-6):
     
@@ -109,7 +109,7 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, n
             # Evaluate the network (forward pass)
             prediction = model(batch_x)
             accuracies_test.append(accuracy_unet(prediction, batch_y))
-            f1_scores_test.append(dice_coef(prediction, batch_y).item())
+            f1_scores_test.append(dice_coef(prediction, batch_y))
             iou_scores_test.append(iou(prediction, batch_y))
         scheduler.step()
         accuracies_test_mean = np.mean(accuracies_test)
