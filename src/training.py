@@ -48,7 +48,22 @@ def dice_coef(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
                              (pflat.sum() + tflat.sum() + smooth))
     return coef
 
-def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, num_epochs):
+def iou(prediction, target, smooth = 1e-6):
+    
+    # take only predictions of road channel
+    outputs = prediction[:, 0] > 0.5
+    # gt of road channel
+    labels = target[:, 0] > 0.5
+    
+    intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
+    union = (outputs | labels).float().sum((1, 2))         # Will be zero if both are 0
+    
+    iou = (intersection + smooth) / (union + smooth)  # We smooth our devision to avoid 0/0
+    thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresholds
+    
+    return thresholded.mean().item()
+
+def train(model, criterion, dataset_train, dataset_test, optimizer, num_epochs):
     """
     Train the given model
     
@@ -67,6 +82,7 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, n
         model.train()
         for batch_x, batch_y in dataset_train:
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+
             # Evaluate the network (forward pass)
             batch_pred = model(batch_x)
             loss = criterion(batch_pred, batch_y.float())
@@ -82,16 +98,14 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, n
         model.eval()
         accuracies_test = []
         f1_scores_test = []
+        iou_scores_test = []
         for batch_x, batch_y in dataset_test:
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
 
             # Evaluate the network (forward pass)
             prediction = model(batch_x)
-            #accuracies_test.append(accuracy(prediction, batch_y))
             accuracies_test.append(accuracy_unet(prediction, batch_y))
-            #f1_scores_test.append(F1_score(prediction, batch_y))
             f1_scores_test.append(dice_coef(prediction, batch_y).item())
+            iou_scores_test.append(iou(prediction, batch_y))
 
-        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5} | In {time.time() - begin} s")
-        scheduler.step()
-
+        print(f"Epoch {epoch + 1 : 2} | Test accuracy : {np.mean(accuracies_test):.5} | Test F1 : {np.mean(f1_scores_test):.5} | Test IoU : {np.mean(iou_scores_test):.5} | In {time.time() - begin} s")
