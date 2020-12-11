@@ -51,18 +51,17 @@ def dice_coef(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
 def iou(prediction, target, smooth = 1e-6):
     
     # take only predictions of road channel
-    outputs = prediction[:, 0] > 0.5
+    outputs = prediction[0] > 0.5
     # gt of road channel
-    labels = target[:, 0] > 0.5
+    labels = target[0] > 0.5
     
-    intersection = (outputs & labels).float().sum((1, 2))  # Will be zero if Truth=0 or Prediction=0
-    union = (outputs | labels).float().sum((1, 2))         # Will be zero if both are 0
+    intersection = (outputs * labels).float().sum()  # Will be zero if Truth=0 or Prediction=0
+    union = (outputs | labels).float().sum()         # Will be zero if both are 0
     
     iou = (intersection + smooth) / (union + smooth)  # We smooth our devision to avoid 0/0
-    thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresholds
     
-    return thresholded.mean().item()
-
+    return iou.item() 
+    
 def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, num_epochs):
     """
     Train the given model
