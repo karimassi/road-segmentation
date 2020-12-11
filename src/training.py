@@ -120,5 +120,5 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, n
         global_f1_scores_test.append(f1_scores_test_mean)
         iou_scores_test_mean = np.mean(iou_scores_test)
         global_iou_scores_test.append(iou_scores_test_mean)
-        print(f"Epoch {epoch + 1 : 2} | Training loss : {epoch_loss:.5} | Test accuracy : {accuracies_test_mean:.5} | Test F1 : {f1_scores_test_mean:.5} | Test IoU : {iou_scores_test_mean:.5} | In {time.time() - begin:.1} s")
+        print(f"Epoch {epoch + 1 : 2} | Training loss : {epoch_loss:.5} | Test accuracy : {accuracies_test_mean:.5} | Test F1 : {f1_scores_test_mean:.5} | Test IoU : {iou_scores_test_mean:.5} | In {time.time() - begin:.5} s")
     return global_accuracies_test, global_f1_scores_test, global_iou_scores_test
