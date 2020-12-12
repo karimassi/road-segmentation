@@ -34,7 +34,7 @@ class ImageMaskDataset(Dataset):
       gt_patches = []
       for i in range(sat_windows.shape[1]):
         for j in range(sat_windows.shape[2]):
-          sat_patch = np.transpose(sat_windows[0][j][i], axes=(1, 2, 0))
+          sat_patch = np.transpose(sat_windows[0][i][j], axes=(1, 2, 0))
           gt_patch = gt_windows[i][j]
           sat_patches.append(sat_patch)
           gt_patches.append(gt_patch)
