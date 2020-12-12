@@ -62,7 +62,7 @@ def iou(prediction, target, smooth = 1e-6):
     
     return iou.item() 
 
-def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, num_epochs):
+def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler=None, num_epochs=10):
     """
     Train the given model
     
@@ -112,7 +112,8 @@ def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler, n
             accuracies_test.append(accuracy_unet(prediction, batch_y))
             f1_scores_test.append(dice_coef(prediction, batch_y))
             iou_scores_test.append(iou(prediction, batch_y))
-        scheduler.step()
+        if scheduler is not None :
+            scheduler.step()
         accuracies_test_mean = np.mean(accuracies_test)
         global_accuracies_test.append(accuracies_test_mean)
         f1_scores_test_mean = np.mean(f1_scores_test)
