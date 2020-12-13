@@ -1,33 +1,28 @@
-# road-segmentation
-Classifier that segments roads in satellite images. Project in the scope of the Machine Learning course at EPFL. 
+# Detecting Roads in Aerial Images using Deep Neural Networks
 
-For this choice of project task, we provide a set of satellite images acquired
-from GoogleMaps. We also provide ground-truth images where each pixel is labeled
-as road or background.
+We implement a classifier following a U-Net architecture that outperforms more basic approaches and segments unseen data with high accuracy. Our model was trained using the Pytorch framework on Google's Colab infrastructure. 
 
-Your task is to train a classifier to segment roads in these images, i.e.
-assigns a label `road=1, background=0` to each pixel.
+## Contents
 
-Submission system environment setup:
+- The [src](src) folder contains all our models along with helpers for metric and loss functions.
+- The [notebooks](notebooks) folder contains interactive `jupyter` notebooks that we used to train our model.
+ 
+## Setup
 
-1. The dataset is available from the
-[AICrowd page](https://www.aicrowd.com/challenges/epfl-ml-road-segmentation).
+The following is a list of dependencies used in this study. You can install them using either `pip` or `anaconda`:
+- [Pytorch](https://pytorch.org/) 
+- [Pytorch learning rate finder](https://github.com/davidtvs/pytorch-lr-finder)
+- Matplotlib 
+- Numpy 
 
-2. Obtain the python notebook `segment_aerial_images.ipynb` from this github
-folder, to see example code on how to extract the images as well as
-corresponding labels of each pixel.
+To run the various notebooks, you will need `jupyter lab` (or `notebook`). 
 
-The notebook shows how to use `scikit learn` to generate features from each
-pixel, and finally train a linear classifier to predict whether each pixel is
-road or background. Or you can use your own code as well. Our example code here
-also provides helper functions to visualize the images, labels and predictions.
-In particular, the two functions `mask_to_submission.py` and
-`submission_to_mask.py` help you to convert from the submission format to a
-visualization, and vice versa.
+## Training instructions
 
-3. As a more advanced approach, try `tf_aerial_images.py`, which demonstrates
-the use of a basic convolutional neural network in TensorFlow for the same
-prediction task.
+TODO
 
-Evaluation Metric:
- [F1 score](https://en.wikipedia.org/wiki/F1_score)
+## Authors
+
+- Karim Assi (karim.assi@epfl.ch)
+- Alexandre Pinazza (alexandre.pinazza@epfl.ch)
+- Milan Reljin (milan.reljin@epfl.ch)
