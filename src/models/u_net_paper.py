@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-class UNet_paper(nn.Module):
+class UNet(nn.Module):
   # implementation of u-net neural network with residual blocks as seen in paper doi:10.3390/app9224825
 
   def __init__(self, num_channels, num_filters):
