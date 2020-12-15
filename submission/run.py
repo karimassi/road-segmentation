@@ -3,9 +3,9 @@
 ## Config varriables
 # True if you want to load the pretrained model
 load_pretrained_model = True
-# The path to the pretrained model archive, ignored if previous varriable is False
+# The path to the pretrained model archive, if previous varriable is False then it will be used to save the final model
 pretrained_model_path = "../pretrained_model.pkt"
-# Path to the data folder
+# Path to the data folder (Note the '/' at the end of the string)
 root_data_path = "../data/"
 
 # General imports
@@ -24,7 +24,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 """# ***Train model***"""
 
 # Number of training Epoch
-total_iterations = 100
+total_iterations = 90
 learning_rate = 1e-4 
 
 from u_net_paper import UNet_paper
@@ -87,6 +87,12 @@ else:
     criterion = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     training.train(model, criterion, dataloader_train, dataloader_test, optimizer, total_iterations)
+
+    # Finally save the trained model 
+    torch.save(
+        { 'model_state_dict': model.state_dict() },
+        pretrained_model_path
+    )
 
 """# **Predict output for testing images**"""
 

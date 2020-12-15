@@ -22,8 +22,10 @@ To run the various notebooks, you will need `jupyter lab` (or `notebook`). Note 
 In the `submission` folder, you will find the `run.py` script along with all the necessary helper files it depends on. The script supose that all those files are in the same directory as itself.
 A the top of the `run.py` file are defined 3 varriables :
 - `load_pretrained_model` which is a boolean that tell the code if we want to load a pretrained model or train a new one from scratch.
-- `pretrained_model_path` the path to the archive that contains the pretrained model. This varriable is ignored if the the previous varriable is set to `False` 
+- `pretrained_model_path` the path to the archive that contains the pretrained model. If the the previous varriable is set to `False`  then the resulting trained model will be saved at that path.
 - `root_data_path` the path to the directory containing all the training and testing data.
+
+When the program is done training or loading the model depending on the value of `load_pretrained_model`, it will creates a directory called `outputs` in which it will writes the ouput of the model of each testing images. Finally then from this directory, it will creates the submission file with the name `submission.csv`.
 
 ## Authors
 
