@@ -4,7 +4,7 @@
 # True if you want to load the pretrained model
 load_pretrained_model = True
 # The path to the pretrained model archive, if previous varriable is False then it will be used to save the final model
-pretrained_model_path = "../pretrained_model.pkt"
+pretrained_model_path = "./trained_models/pretrained_model.pkt"
 # Path to the data folder (Note the '/' at the end of the string)
 root_data_path = "../data/"
 
