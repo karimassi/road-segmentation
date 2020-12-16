@@ -42,7 +42,7 @@
 
 \section{Introduction}
 
-This study deals with the segmentation of aerial terrestrial images: our goal is to accurately determine whether each image pixel is a road or a background. In literature, convolutional neural networks have been shown to be effective in solving this task. We implement a model following a U-Net architecture that outperforms more basic approaches and accurately segments unseen data. 
+This study deals with the segmentation of aerial images: our goal is to accurately determine whether each image pixel is a road or a background. In literature, convolutional neural networks have been shown to be effective in solving this task. We implement a model following a U-Net architecture that outperforms more basic approaches and accurately segments unseen data. 
 
 \section{U-Net Encoder-Decoder}
 
@@ -50,7 +50,7 @@ This study deals with the segmentation of aerial terrestrial images: our goal is
 
 \begin{figure*}
     \centering
-    \includegraphics[width = \textwidth, height = 0.5 \textwidth]{doc/images/Unet.png}
+    \includegraphics[width = 0.8 \textwidth, height = 0.4 \textwidth]{doc/images/Unet.png}
     \caption{Structural description of our network. Legend: 
     \textcolor{conv}{Convolution},
     \textcolor{convtransp}{Transposed convolution},
@@ -63,23 +63,23 @@ This study deals with the segmentation of aerial terrestrial images: our goal is
 
 The model we propose is described by Alshaikhli et. al \cite{unet_roadseg}, an extension of the original U-Net architecture \cite{unet_medical}, and is specifically developed for road segmentation of aerial images. In this model, contraction blocks are augmented with batch normalization layers and implemented as residual blocks.  \\ 
 
-The U-Net architecture was developed for biomedical image segmentation \cite{unet_medical}. It's a type of encoder-decoder network consisting of two parts: a contracting path and an expansive path. The contracting path is made up of several applications of convolutional layers followed by max-pool layers to extract feature vectors at different levels. The decoder part consists of several expansion blocks. Each block is made up of an up-sampling layer and a convolution layer. Up-sampling is implemented using a transposed convolution, which has the advantage of being learnable. In addition, at each level input to the expansion block is concatenated with the feature vector of the corresponding contraction layer. \\
+The U-Net architecture was developed for biomedical image segmentation \cite{unet_medical}. It's a type of encoder-decoder network consisting of two parts: a contracting path and an expansive path. The contracting path is made up of several applications of convolutional layers followed by max-pool layers to extract feature vectors at different levels. The decoder part consists of several expansion blocks. Each block is made up of an up-sampling layer and a convolution layer. Up-sampling is implemented using a transposed convolution, which has the advantage of being learnable. In addition, at each level, the input to the expansion block is concatenated with the feature vector of the corresponding contraction layer. \\
 
 The complete architecture of our model is depicted in figure \ref{fig:model_arch}. Each convolutional layer has a kernel size of $3 \times 3$, a  stride of 1 and the same padding. The first convolutional layer has 64 filters: this number is doubled in each consecutive layer of the network's encoder (left part of figure \ref{fig:model_arch}). Consequently, the decoder section applies convolutions of size 512, 256, 128 and 64 respectively. In order to add together the input of each contracting (residual) block and its output we first apply a convolution to the input in order match their dimensionality. At the end of each block, max-pooling with a kernel size of $2 \times 2$ and stride 2 is applied to down-sample the output. A transposed convolution with a kernel size of $3 \times 3$ and stride 2 is used in the decoder part (right section of figure \ref{fig:model_arch}) to up-sample the images. The final prediction is obtained using a $1 \times 1$ convolution layer followed by a sigmoid activation function. \\
 
-During training, neural networks are updated layer by layer, while assuming that previous layers do not change. In practice, all layers are changed simultaneously, and the distribution of each layer’s inputs changes during training: this effect is known as internal covariate shift. This model uses \textit{batch normalization}, i.e. the standardization of the activations of each layer, to reduce the said effect \cite{batchnorm}. \\
+During training, neural networks are updated layer by layer, while assuming that previous layers do not change. In practice, all layers are changed simultaneously, and the distribution of each layer’s inputs changes during training: this effect is known as internal covariate shift. The model uses \textit{batch normalization}, i.e. the standardization of the activations of each layer, to reduce the said effect \cite{batchnorm}. \\
 
-Moreover, as neural networks get deeper and more complex, optimizing them becomes more difficult to the point where they get outperformed by shallower, simpler counterpart models, as has been shown in \cite{deep_residual_nn}. This is due to a vanishing or exploding gradient. To counter this, \cite{deep_residual_nn} makes use of \textit{residual blocks} which add shortcut connections that skip one or more layers. This results in easier network optimization, because training of some layers can be avoided.
+Moreover, as neural networks get deeper and more complex, optimizing them becomes more difficult to the point where they get outperformed by shallower, simpler counterpart models \cite{deep_residual_nn}. This is due to a vanishing or exploding gradient. To counter this, \cite{deep_residual_nn} makes use of \textit{residual blocks} which add shortcut connections that skip one or more layers. This results in easier network optimization, because training of some layers can be avoided.
 
 \subsection{Dataset}
 
-Our dataset consists of satellite images acquired from Google Maps along with their ground truth equivalent (except for the testing set). The training set contains a hundred annotated aerial images, while the testing contains fifty non-annotated images. \\
+Our dataset consists of satellite images acquired from Google Maps along with their ground truth equivalent (except for the testing set). The training set contains a hundred annotated aerial images, while the testing set contains fifty non-annotated images. \\
 
 In order to remove the implicit ordering of classes introduced by integer labeling, we have represented the ground-truth images using one-hot encoding. Each ground truth image has two channels, the first one represents road pixels and the second background ones.
 
 \subsection{Data augmentation}
 
-As training a neural network requires a large amount of images, we first looked into ways to generate more data from the existing images. To that end we extracted $224 \times 224$ patches with a stride value of 64 and increased our training set size by a factor of 9. Some cities have road networks that form repetitive shapes or grids, and our model should be invariant to transformations. To account for this, we rotated each image by $15, -10, 45, -60, -78$ degrees and applied shearing transformations on both coordinates with following shearing angles: $(15, 20), (10, 30), (30, -17), (-3, 20), (-5, -10)$, where first angle corresponds to a horizontal shear, and second to a vertical. This data augmentation leaves us with a total of $9'900$ images.
+As training a neural network requires a large amount of data, we first looked into ways to generate more images from the existing ones. To that end we extracted $224 \times 224$ patches with a stride value of 64 and increased our training set's size by a factor of 9. Some cities have road networks that form repetitive shapes or grids, and our model should be invariant to transformations. To account for this, we rotated each image by $15, -10, 45, -60, -78$ degrees and applied shearing transformations on both coordinates with the following shearing angles: $(15, 20), (10, 30), (30, -17), (-3, 20), (-5, -10)$, where the first angle (\textit{resp.} second) corresponds to a horizontal (\textit{resp.} vertical) shear. The data augmentation step leaves us with a total of $9'900$ images.
 
 \section{Training the model}
 
@@ -88,7 +88,7 @@ We trained our model using the PyTorch framework \cite{pytorch} on Google's Cola
 \subsection{Choice of learning rate}
 \label{sec:choice_lr}
 
-To estimate the optimal learning rate, we perform the \emph{LR range test}  \cite{lr_estimation}. This consists in training our network starting with a low learning rate that exponentially increases with the number of iterations and then plot the loss as a function of the learning rate: the optimal learning rate range corresponds to the point on the graph with the fastest decrease in the loss. We used the implementation of \cite{pytorch_lr_finder} to optimize the choice of the learning rate. Figure \ref{fig:lr_finder_plot} shows the resulting plot.
+To estimate the optimal learning rate, we performed the \emph{LR range test}  \cite{lr_estimation}. This consists in training our network starting with a low learning rate that exponentially increases with the number of iterations and then plotting the loss as a function of the learning rate: the optimal learning rate range corresponds to the point on the graph with the fastest decrease in the loss. We used the implementation of \cite{pytorch_lr_finder} to optimize the choice of the learning rate. Figure \ref{fig:lr_finder_plot} shows the resulting plot.
 
 \begin{figure}[ht]
     \centering
@@ -97,7 +97,7 @@ To estimate the optimal learning rate, we perform the \emph{LR range test}  \cit
     \label{fig:lr_finder_plot}
 \end{figure}
 
-\subsection{Choice of loss function and evaluation metric}
+\subsection{Choice of evaluation metric and loss function}
 
 Our classifier should be able to recognize roads from background pixels in an aerial image. Such images typically contain more background than roads: the total area of roads can be small, compared to the picture size. Standard accuracy is therefore not a good metric, as a classifier always predicting a background would score very high. The Jaccard index, also known as the Intersection over Union score (IoU), is defined as the ratio between the intersection size of the prediction and target data over the size of their union: $J(y, \hat{y}) = \frac{|y \cap \hat{y}|}{|y \cup \hat{y}|}$. This metric takes into account the aforementioned issue and is therefore more relevant for semantic segmentation tasks \cite{reitsam_2020}. As it is preferable to have multiple metrics to assess a model, we chose to use the IoU score along with the accuracy and F1-score\footnote{Note that we used the Dice coefficient here, which represents the same metric as the F1-score.}. \\
 
@@ -159,7 +159,7 @@ Adam converged after 80 epochs with a final training loss of about 15 while SGD 
 
 To assess our model, we need to have a baseline model to which we can compare our model's performance. During training, we reserved 20\% of the training set to serve as a local validation set, on which we report the metrics in the following sections.\\
 
-To that extent, we implemented a Convolutional Neural Network based on the provided one. It consists of two convolutional and pooling layers with a binary cross entropy loss. Its structure is shown in table \ref{tab:cnn_struct}. It works on $16 \times 16$ image patches and predicts whether each patch represents a road or not. In the training set, a patch was classified as a road if more than $0.25$ percent of its pixels were road pixels. We used the same threshold as the one used to generate the submission files from a mask. The performance of our baseline model is shown in table \ref{tab:cnn-perf} for different optimizers. We trained the model until the training loss converged. Notice that the setting using SGD with momentum and learning rate decay converged faster than the one using Adam; this confirms the claim that adaptive methods are not always advantageous \cite{wilson2018marginal}.
+To that extent, we implemented a Convolutional Neural Network based on the provided one. It consists of two convolutional and pooling layers with a binary cross entropy loss. Its structure is shown in table \ref{tab:cnn_struct}. It works on $16 \times 16$ image patches and predicts whether each patch represents a road or not. In the training set, a patch was classified as a road if more than $25\%$ percent of its pixels were road pixels. We used the same threshold as the one used to generate the submission files from a mask. The performance of our baseline model is shown in table \ref{tab:cnn-perf} for different optimizers. We trained the model until the training loss converged. Notice that the setting using SGD with momentum and learning rate decay converged faster than the one using Adam; this confirms the claim that adaptive methods are not always advantageous \cite{wilson2018marginal}.
 
 \begin{table}[ht]
     \centering
