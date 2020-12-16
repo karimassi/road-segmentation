@@ -17,6 +17,7 @@ The following is a list of dependencies used in this study. You can install them
 - [Matplotlib](https://matplotlib.org/), version 3.2.2
 - [Numpy](https://numpy.org/), version 1.18.5
 - [Scikit-image](https://scikit-image.org/), version 0.17.2
+
 To run the various notebooks, you will need `jupyter lab` (or `notebook`). Note that we have moved the files dirring development so the imports migth be broken.
 
 ## Training instructions
