@@ -48,7 +48,7 @@ class ImageMaskDataset(Dataset):
         self.gt_dir = gt_dir
 
         # load data
-        self.files = os.listdir(img_dir)
+        self.files = sorted([f for f in os.listdir(img_dir) if f[:9] == "satImage_"])
         self.n = len(self.files)
 
         self.images = []
@@ -80,7 +80,7 @@ class FullSubmissionImageDataset(Dataset):
         self.test_dir = test_dir
 
         #load data
-        files = os.listdir(test_dir)
+        files = sorted(os.listdir(test_dir))
         self.images = [(int(f[5:]), torch.tensor(mpimg.imread(test_dir + f + "/" + f + ".png")).permute(2, 0, 1)) for f in files if f[:5] == "test_"]
       
     def __len__(self): 

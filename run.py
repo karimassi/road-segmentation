@@ -125,4 +125,4 @@ for indexes, images in submission_dataloader:
     toPIL(out[0]).save(output_dir + "/file_{:03d}.png".format(indexes.view(-1).item()))
 
 
-masks_to_submission("submission.csv", *[output_dir + "/" + f for f in os.listdir(output_dir)])
+masks_to_submission("submission.csv", *[output_dir + "/" + f for f in sorted(os.listdir(output_dir))])
