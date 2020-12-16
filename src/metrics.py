@@ -54,21 +54,6 @@ def dice_coeficient(prediction, target, smooth = 1, class_weights = [0.5, 0.5]):
         w = class_weights[c]
         coef += w*((2. * intersection + smooth) / (pflat.sum() + tflat.sum() + smooth))
     return coef.item()
-    
-def dice_coefficient_2(prediction, target, smooth = 1, class_weights = None):
-
-    if class_weights is None:
-        class_weights = [1/target.shape[1] for i in range(target.shape[1])]
-
-    coef = 0.
-    for c in range(target.shape[1]):
-        pflat = prediction[:, c].contiguous().view(-1)
-        tflat = target[:, c].contiguous().view(-1)
-        intersection = (pflat * tflat).sum()
-           
-        w = class_weights[c]
-        coef += w*((2. * intersection + smooth) / (pflat.sum() + tflat.sum() + smooth))
-    return coef.item()
 
 def iou_score(prediction, target, smooth = 1e-6):
     """
@@ -106,13 +91,6 @@ class DiceLoss(nn.Module):
         self.class_weights = class_weights
 
     def forward(self, prediction, target, smooth = 1):
-        dice = 0.
-        for c in range(target.shape[1]):
-            pflat = prediction[:, c].contiguous().view(-1)
-            tflat = target[:, c].contiguous().view(-1)
-            intersection = (pflat * tflat).sum()
-            
-            w = self.class_weights[c]
-            dice += w*((2. * intersection + smooth) / (pflat.sum() + tflat.sum() + smooth))
-    return 1 - dice
+        dice = dice_coefficient(prediction, target, smooth, self.class_weights)
+        return 1 - dice
 
