@@ -46,7 +46,7 @@ if load_pretrained_model:
     # Load the pretrained model
     if os.path.exists(pretrained_model_path):
         print("Loading model from " + pretrained_model_path)
-        state_dicts = torch.load(pretrained_model_path)
+        state_dicts = torch.load(pretrained_model_path, map_location=device)
         model.load_state_dict(state_dicts['model_state_dict'])
     else :
         print("Unable to load model from " + pretrained_model_path)
