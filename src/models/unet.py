@@ -2,7 +2,8 @@ import torch
 from torch import nn
 
 class UNet(nn.Module):
-    # implementation of u-net neural network with residual blocks as seen in paper doi:10.3390/app9224825
+    """ U-net neural network with residual blocks. Model takes in an RGB image whose dimensions are divisible by 8 and outputs a two-channel prediction.
+        First channel represents road, and second background. This architecture was introduced in doi:10.3390/app9224825  """
 
     def __init__(self, num_channels, num_filters):
         super().__init__()
@@ -75,6 +76,7 @@ class UNet(nn.Module):
         return output
 
 class DownSample(nn.Module):
+    """ Implementation of down-sampling layer, consisting of a residual block and a max-pool layer """
     def __init__(self, num_channels, num_filters):
         super().__init__()
         self.num_channels = num_channels
@@ -89,11 +91,13 @@ class DownSample(nn.Module):
         return conv_out, max_out
 
 class UpSample(nn.Module):
+    """ Implementation of up-sampling layer, consisting of a convolutional layer and a transpose convolution """
     def __init__(self, num_channels, num_filters):
         super().__init__()
         self.num_channels = num_channels
         self.num_filters = num_filters
 
+	      # transpose convolution for upscaling the image
         conv = ConvLayer(num_channels, num_filters)
         trans_conv = nn.ConvTranspose2d(
             in_channels=num_filters,
@@ -112,6 +116,7 @@ class UpSample(nn.Module):
         return self.up_samp(input)
 
 class ConvLayer(nn.Module):
+    """ Implementation of convolutional layers used in the decoder part of the network """
     def __init__(self, num_channels, num_filters):
         super().__init__()
         self.num_channels = num_channels
@@ -127,6 +132,7 @@ class ConvLayer(nn.Module):
         return self.layer(input)
 
 class ResBlock(nn.Module):
+    """ Implementation of the residual block. It applies a convolutional layer and sums it with the input """
     def __init__(self, in_c, out_c):
         super().__init__()
         self.in_c = in_c

@@ -7,10 +7,11 @@ from torch.utils.data import Dataset
 from skimage.util.shape import view_as_windows
 
 class ImageMaskDataset(Dataset):
+    """ Dataset for the training data used with u-net model. This dataset loads in images from the specified path and extracts paches of size 224x224 """
 
     @staticmethod
     def convert_to_one_hot(gt_img):
-        # converts groundtruth image to one-hot encoding
+        """ Converts black-and-white ground-truth image into one-hot encoding """
         gt = torch.tensor(gt_img)
         road = (gt > 0.5) * 1.0
         background = (gt < 0.5) * 1.0
@@ -23,7 +24,7 @@ class ImageMaskDataset(Dataset):
 
     @staticmethod
     def extract_patches(sat_img, gt_img):
-        # extracts patches of size 224x224 with stride 64
+        """ Extracts patches of size 224x224 with stride 64 from satelite image and corresponding ground-truth image """
 
         sat_img = np.transpose(sat_img, axes=(2, 0, 1))
 
@@ -73,6 +74,7 @@ class ImageMaskDataset(Dataset):
 
 
 class FullSubmissionImageDataset(Dataset):
+    """ Dataset for the testing data, used with u-net model. Stores images in its original shape """
     
     def __init__(self, test_dir):
         super().__init__()
