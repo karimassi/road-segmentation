@@ -2,7 +2,14 @@ import torch
 import numpy as np
 import time
 
-from metrics import accuracy_unet, dice_coeficient, iou_score 
+from src.metrics import accuracy_unet, dice_coeficient, iou_score 
+
+# When training CNN: make sure to uncomment the following import, 
+# and change the function calls to the right metrics below. Also
+# comment all lines related to IoU (not used in CNN)
+
+# from src.metrics import accuracy_cnn, F1_score 
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

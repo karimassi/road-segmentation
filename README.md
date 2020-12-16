@@ -5,27 +5,28 @@ We implement a classifier following a U-Net architecture that outperforms more b
 ## Contents
 
 - The [src](src) folder contains all our models along with helpers for metric and loss functions.
-- The [notebooks](notebooks) folder contains interactive `jupyter` notebooks that we used to train our model.
+- The notebooks used to train [CNN](CNN.ipynb) and [UNet](Unet.ipynb). 
+- A [run](run.py) script to reproduce the results of our best AICrowd submission (more on that below). 
+- A pre-trained model `pretrained_model.pkt`.
  
 ## Setup
 
 The following is a list of dependencies used in this study. You can install them using either `pip` or `anaconda`:
-- [Pytorch](https://pytorch.org/) 
-- [Pytorch learning rate finder](https://github.com/davidtvs/pytorch-lr-finder)
-- Matplotlib 
-- Numpy 
+- [Pytorch](https://pytorch.org/), version 1.7.0
+- [Pytorch learning rate finder](https://github.com/davidtvs/pytorch-lr-finder), version 0.2.1
+- [Matplotlib](https://matplotlib.org/), version 3.2.2
+- [Numpy](https://numpy.org/), version 1.18.5
 
 To run the various notebooks, you will need `jupyter lab` (or `notebook`). Note that we have moved the files dirring development so the imports migth be broken.
 
 ## Training instructions
 
-In the `submission` folder, you will find the `run.py` script along with all the necessary helper files it depends on. The script supose that all those files are in the same directory as itself.
-A the top of the `run.py` file are defined 3 varriables :
-- `load_pretrained_model` which is a boolean that tell the code if we want to load a pretrained model or train a new one from scratch.
-- `pretrained_model_path` the path to the archive that contains the pretrained model. If the the previous varriable is set to `False`  then the resulting trained model will be saved at that path.
-- `root_data_path` the path to the directory containing all the training and testing data.
+In the root folder, you will find the `run.py` script. A the top of the file, there are 3 varriables :
+- `load_pretrained_model`, a boolean that specifies whether to load a pretrained model or train a new one from scratch (default is True).
+- `pretrained_model_path`, the path to the pretrained model. If the the previous varriable is set to `False`  then the resulting trained model will be saved at that path.
+- `root_data_path`, the path to the directory containing all the training and testing data.
 
-When the program is done training or loading the model depending on the value of `load_pretrained_model`, it will creates a directory called `outputs` in which it will writes the ouput of the model of each testing images. Finally then from this directory, it will creates the submission file with the name `submission.csv`.
+When the program is done training (or loading the model), it writes, in a `outputs` directory, the prediction masks of our model on the testing images. Using this directory, it creates the submission file `submission.csv`.
 
 ## Authors
 
