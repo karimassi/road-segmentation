@@ -86,7 +86,7 @@ else:
 
     criterion = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    training.train(model, criterion, dataloader_train, dataloader_test, optimizer, total_iterations)
+    training.train(model, criterion, dataloader_train, dataloader_test, optimizer, num_epochs = total_iterations)
 
     # Finally save the trained model 
     torch.save(
@@ -117,6 +117,6 @@ for indexes, images in submission_dataloader:
     out = model(images.to(device)).view(2, 608, 608).cpu()
     toPIL(out[0]).save(output_dir + "/file_{:03d}.png".format(indexes.view(-1).item()))
 
-from mask_to_submission import mask_to_submission
+from mask_to_submission import masks_to_submission
 
 masks_to_submission("submission.csv", *[output_dir + "/" + f for f in os.listdir(output_dir)])
