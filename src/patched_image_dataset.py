@@ -1,14 +1,9 @@
 import torch
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset
+import os, sys
 import torchvision.io as io
 import matplotlib.image as mpimg
-import os, sys
-
-root_dir = "/content/drive/Shareddrives/road-segmentation/data/" if "google.colab" in sys.modules else "data/"
-img_path = root_dir + "training/images/"
-gt_path = root_dir + "training/groundtruth/"
-test_path = root_dir + "test_set_images/"
+import torchvision.transforms as transforms
+from torch.utils.data import Dataset
 
 class PatchedSatImagesDataset(Dataset):
     img_size = (400, 400)
@@ -16,13 +11,13 @@ class PatchedSatImagesDataset(Dataset):
     
     def __init__(self, training_img_path, training_gt_path, foreground_threshold = None, transform = None):
         """
-        Dataset for the traing data, this dataset is already patched
-        
-        @param training_img_path    : (string)             path to the training sat images
-        @param training_gt_path     : (string)             path to the groundtruth images
-        @param foreground_threshold : (float, optional)     if a value is provided then the label is 1 if the mean of the patch is greater than this value. 
-                                                           if no value is provided, the mean is returned as label
-        @param transform            : (callable, optional) a transformation to apply to each patch before returning it
+            Dataset for the traing data, this dataset is already patched
+
+            @param training_img_path    : (string)             path to the training sat images
+            @param training_gt_path     : (string)             path to the groundtruth images
+            @param foreground_threshold : (float, optional)     if a value is provided then the label is 1 if the mean of the patch is greater than this value. 
+                                                               if no value is provided, the mean is returned as label
+            @param transform            : (callable, optional) a transformation to apply to each patch before returning it
         """
         super().__init__()
         
@@ -68,10 +63,10 @@ class PatchedTestSatImagesDataset(Dataset):
     
     def __init__(self, test_img_path, transform = None):
         """
-        Dataset for the testing data, this dataset is already patched
-        
-        @param test_img_path    : (string)             path to the testing sat images
-        @param transform        : (callable, optional) a transformation to apply to each patch before returning it
+            Dataset for the testing data, this dataset is already patched
+
+            @param test_img_path    : (string)             path to the testing sat images
+            @param transform        : (callable, optional) a transformation to apply to each patch before returning it
         """
         super().__init__()
         

@@ -8,15 +8,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def train(model, criterion, dataset_train, dataset_test, optimizer, scheduler=None, num_epochs=10):
     """
-    Train the given model
-    
-    @param model         : torch.nn.Module
-    @param criterion     : torch.nn.modules.loss._Loss
-    @param dataset_train : torch.utils.data.DataLoader
-    @param dataset_test  : torch.utils.data.DataLoader
-    @param optimizer     : torch.optim.Optimizer
-    @param scheduler     : torch.optim.lr_scheduler
-    @param num_epochs    : int
+        Train the given model
+
+        @param model         : torch.nn.Module
+        @param criterion     : torch.nn.modules.loss._Loss
+        @param dataset_train : torch.utils.data.DataLoader
+        @param dataset_test  : torch.utils.data.DataLoader
+        @param optimizer     : torch.optim.Optimizer
+        @param scheduler     : torch.optim.lr_scheduler
+        @param num_epochs    : int
     """
     print("Starting training")
     model.to(device)
