@@ -10,6 +10,9 @@
 ]{todonotes}
 \usepackage{float}
 
+\usepackage[all]{nowidow}
+
+
 % \usepackage[dvipsnames]{xcolor}
 \definecolor{io}{HTML}{23445D}
 \definecolor{conv}{HTML}{6C8EBF}
@@ -36,13 +39,20 @@
 
 \maketitle
 
-%\begin{abstract}
-    
-%\end{abstract}
+\begin{abstract}
+    Given a set of aerial images, it would be interesting to accurately distinguish roads. Such a segmentation can be used in cartography and terrestrial navigation systems. We implement and train a deep convolutional network that performs better than simpler baseline models, then discuss possible improvements. 
+\end{abstract}
 
 \section{Introduction}
 
-This study deals with the segmentation of aerial images: our goal is to accurately determine whether each image pixel is a road or a background. In literature, convolutional neural networks have been shown to be effective in solving this task. We implement a model following a U-Net architecture that outperforms more basic approaches and accurately segments unseen data. 
+This study deals with the segmentation of aerial images: our goal is to accurately determine whether each image pixel is a road or a background. In literature, convolutional neural networks have been shown to be effective in solving this task. We implement a model following a U-Net architecture that outperforms more basic approaches and accurately segments unseen data. Our code, along with instructions to reproduce our results, is publicly available in the following repository:
+\href{https://github.com/karimassi/road-segmentation}{\texttt{github.com/karimassi/road-segmentation}}.
+
+\section{Dataset}
+
+Our dataset consists of satellite images acquired from Google Maps along with their ground truth equivalent (except for the testing set). The training set contains a hundred annotated aerial images, while the testing set contains fifty non-annotated images. \\
+
+In order to remove the implicit ordering of classes introduced by integer labeling, we have represented the ground-truth images using one-hot encoding. Each ground truth image has two channels, the first one represents road pixels and the second background ones.
 
 \section{U-Net Encoder-Decoder}
 
@@ -50,7 +60,7 @@ This study deals with the segmentation of aerial images: our goal is to accurate
 
 \begin{figure*}
     \centering
-    \includegraphics[width = 0.8 \textwidth, height = 0.4 \textwidth]{doc/images/Unet.png}
+    \includegraphics[width = 0.9 \textwidth, height = 0.4 \textheight]{doc/images/Unet.png}
     \caption{Structural description of our network. Legend: 
     \textcolor{conv}{Convolution},
     \textcolor{convtransp}{Transposed convolution},
@@ -61,7 +71,7 @@ This study deals with the segmentation of aerial images: our goal is to accurate
     \label{fig:model_arch}
 \end{figure*}
 
-The model we propose is described by Alshaikhli et. al \cite{unet_roadseg}, an extension of the original U-Net architecture \cite{unet_medical}, and is specifically developed for road segmentation of aerial images. In this model, contraction blocks are augmented with batch normalization layers and implemented as residual blocks.  \\ 
+The model we propose is described by Alshaikhli et. al \cite{unet_roadseg}, an extension of the original U-Net architecture \cite{unet_medical}, and is specifically developed for road segmentation of aerial images. In this model, contraction blocks are augmented with batch normalization layers and implemented as residual blocks.  \\
 
 The U-Net architecture was developed for biomedical image segmentation \cite{unet_medical}. It's a type of encoder-decoder network consisting of two parts: a contracting path and an expansive path. The contracting path is made up of several applications of convolutional layers followed by max-pool layers to extract feature vectors at different levels. The decoder part consists of several expansion blocks. Each block is made up of an up-sampling layer and a convolution layer. Up-sampling is implemented using a transposed convolution, which has the advantage of being learnable. In addition, at each level, the input to the expansion block is concatenated with the feature vector of the corresponding contraction layer. \\
 
@@ -70,12 +80,6 @@ The complete architecture of our model is depicted in figure \ref{fig:model_arch
 During training, neural networks are updated layer by layer, while assuming that previous layers do not change. In practice, all layers are changed simultaneously, and the distribution of each layer’s inputs changes during training: this effect is known as internal covariate shift. The model uses \textit{batch normalization}, i.e. the standardization of the activations of each layer, to reduce the said effect \cite{batchnorm}. \\
 
 Moreover, as neural networks get deeper and more complex, optimizing them becomes more difficult to the point where they get outperformed by shallower, simpler counterpart models \cite{deep_residual_nn}. This is due to a vanishing or exploding gradient. To counter this, \cite{deep_residual_nn} makes use of \textit{residual blocks} which add shortcut connections that skip one or more layers. This results in easier network optimization, because training of some layers can be avoided.
-
-\subsection{Dataset}
-
-Our dataset consists of satellite images acquired from Google Maps along with their ground truth equivalent (except for the testing set). The training set contains a hundred annotated aerial images, while the testing set contains fifty non-annotated images. \\
-
-In order to remove the implicit ordering of classes introduced by integer labeling, we have represented the ground-truth images using one-hot encoding. Each ground truth image has two channels, the first one represents road pixels and the second background ones.
 
 \subsection{Data augmentation}
 
@@ -92,7 +96,7 @@ To estimate the optimal learning rate, we performed the \emph{LR range test}  \c
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.6\linewidth]{doc/images/lr_finder_plot.png}
+    \includegraphics[width=0.7\linewidth]{doc/images/lr_finder_plot.png}
     \caption{Output plot of the LR finder used with Adam and BCE loss.}
     \label{fig:lr_finder_plot}
 \end{figure}
@@ -155,13 +159,11 @@ Adam converged after 80 epochs with a final training loss of about 15 while SGD 
     \label{fig:opt_metrics}
 \end{figure}
 
-\section{Evaluation}
+\section{Baseline CNN}
 
-To assess our model, we need to have a baseline model to which we can compare our model's performance. During training, we reserved 20\% of the training set to serve as a local validation set, on which we report the metrics in the following sections.\\
+We also implemented a simple Convolutional Neural Network. It consists of two convolutional and pooling layers with a binary cross entropy loss. Its structure is shown in table \ref{tab:cnn_struct}. It works on $16 \times 16$ image patches and predicts whether each patch represents a road or not. In the training set, a patch was classified as a road if more than $25\%$ percent of its pixels were road pixels. We used the same threshold as the one used to generate the submission files from a mask. The performance of our baseline model is shown in table \ref{tab:cnn-perf} for different optimizers. We trained the model until the training loss converged. Notice that the setting using SGD with momentum and learning rate decay converged faster than the one using Adam; this confirms the claim that adaptive methods are not always advantageous \cite{wilson2018marginal}.
 
-To that extent, we implemented a Convolutional Neural Network based on the provided one. It consists of two convolutional and pooling layers with a binary cross entropy loss. Its structure is shown in table \ref{tab:cnn_struct}. It works on $16 \times 16$ image patches and predicts whether each patch represents a road or not. In the training set, a patch was classified as a road if more than $25\%$ percent of its pixels were road pixels. We used the same threshold as the one used to generate the submission files from a mask. The performance of our baseline model is shown in table \ref{tab:cnn-perf} for different optimizers. We trained the model until the training loss converged. Notice that the setting using SGD with momentum and learning rate decay converged faster than the one using Adam; this confirms the claim that adaptive methods are not always advantageous \cite{wilson2018marginal}.
-
-\begin{table}[ht]
+\begin{table}[h]
     \centering
     \begin{tabular}{|c|c|c|}
         \hline
@@ -190,6 +192,8 @@ To that extent, we implemented a Convolutional Neural Network based on the provi
     \caption{Performance evaluation of baseline CNN under different parameters. For the SGD optimizer, we set a momentum of 0.9 and an exponential LR decay. The LR values are found using the technique previously mentioned.}
     \label{tab:cnn-perf}
 \end{table}
+
+\section{Model evaluation}
 
 \begin{figure*}[ht]
     \centering
@@ -234,9 +238,10 @@ To that extent, we implemented a Convolutional Neural Network based on the provi
     \label{fig:output_comparison}
 \end{figure*}
 
-\section{Results}
 
-The baseline CNN model has an accuracy of 84\% and an F1-score of 0.67 on a local validation set, while our U-Net model achieves an accuracy of 99\%, an F1-score of 0.98 and an Jaccard index of 0.95. As our model is fully convolutional with 3 max-pooling layers, it accepts any RGB image having dimensions being multiples of 8: this is handy as we can directly feed a whole image of the testing set. Figure \ref{fig:output_comparison} shows a prediction of our models for two different images. 
+To assess our model, we need to compare its performance to that of a baseline model. During training, we reserved 20\% of the training set to serve as a local validation set, on which we report the metrics in the following sections.\\
+
+The baseline CNN model has an accuracy of 84\% and an F1-score of 0.67 on a local validation set, while our U-Net model achieves an accuracy of 99\%, an F1-score of 0.98 and an Jaccard index of 0.95. On the testing set, we obtain an accuracy of 94.6\% and an F1-score of 0.897. As our model is fully convolutional with 3 max-pooling layers, it accepts any RGB image having dimensions being multiples of 8: this is handy as we can directly feed a whole image of the testing set. Figure \ref{fig:output_comparison} shows a prediction of our models for two different images. 
 
 \section{Further work}
 
@@ -249,12 +254,12 @@ Mnih and Hinton \cite{post_processing} have shown that they achieved a substanti
     \centering
     \begin{subfigure}{0.45\linewidth}
         \centering
-        \includegraphics[width=0.65\linewidth]{doc/images/blurry_input.png}
+        \includegraphics[width=0.8\linewidth]{doc/images/blurry_input.png}
         \caption{Input image}
     \end{subfigure}
     \begin{subfigure}{0.45\linewidth}
         \centering
-        \includegraphics[width=0.65\linewidth]{images/blurry_output.png}
+        \includegraphics[width=0.8\linewidth]{images/blurry_output.png}
         \caption{Prediction of our model}
     \end{subfigure}
     \caption{Blurry output of our model}
@@ -268,18 +273,6 @@ So far, training our model took a few hours with a relatively small dataset, in 
 \section{Conclusion}
 
 We implemented a classifier based on the U-Net architecture that can correctly and accurately segment roads from aerial images. That model can be further improved by focusing more on pre-processing and post-processing, or by looking into transfer learning. Nevertheless, it performs better than a basic CNN network trained under similar conditions.
-
-\clearpage
-
-% TODO before submission
-
-\todo{Cleanup code}
-\todo{Move metrics from training.py to separate file}
-\todo{Make run.py}
-\todo{Prepare README.md}
-
-
-\listoftodos
 
 \bibliographystyle{IEEEtran}
 \bibliography{literature}
